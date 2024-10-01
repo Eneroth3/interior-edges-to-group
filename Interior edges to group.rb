@@ -2,26 +2,52 @@
 # Merges faces while retaining a copy of the purged edges in a group.
 # Useful in my laser cutting workflow where I want to manage these edges separately for engraving
 
-model = Sketchup.active_model
-entities = model.active_entities
-selection = model.selection
+def group_interior_edges
+  model = Sketchup.active_model
+  entities = model.active_entities
+  selection = model.selection
 
-model.start_operation("Interior Edges to Group")
+  model.start_operation("Group Interior Edges")
 
-subject = selection.empty? ? entities.to_a : selection.to_a
-# TODO: Use more reliable check for flat edges
-interior_edges = subject.grep(Sketchup::Edge).select { |e| e.faces.size == 2 && e.faces[0].normal.parallel?(e.faces[1].normal) }
-p interior_edges
-old_entities = entities.to_a
-group = entities.add_group(interior_edges)
+  subject = selection.empty? ? entities.to_a : selection.to_a
+  interior_edges =
+    subject.grep(Sketchup::Edge).select { |e| e.faces.size == 0 || coplanar_edge?(e)  }
 
-### # SketchUp create new edges in place of those grouped
-### new_entities = entities.to_a - old_entities
-### p new_entities
-### entities.erase_entities(new_entities - [group])
+  # old_entities = entities.to_a
 
-entities.erase_entities(interior_edges)
+  # Creating a group from existing entities only works reliably in the active
+  # entities. Hence we don't pass entities or edges as arguments to this method,
+  # but limit it to the current selection.
+  group = entities.add_group(interior_edges)
 
-# TODO: Line up axes with parent?
+  #I thought SketchUp moved the existing entities into a group and creaed new
+  ### new_entities = entities.to_a - old_entities
+  ### entities.erase_entities(new_entities - [group])
 
-model.commit_operation
+  # Turns out SketchU places the copied entities in the group and retains the
+  # original entities where they were.
+  entities.erase_entities(interior_edges)
+
+  # TODO: Line up axes with parent (drawing axes)?
+
+  model.commit_operation
+end
+
+# TODO: Copy to community lib
+
+# Test if the two faces around an edge or planar, i.e. if the edge can be erased
+# and SketchUp merging the faces into one.
+#
+# @param edge [SketchUp::Edge]
+#
+# @return [Boolean]
+def coplanar_edge?(edge)
+  return false unless edge.faces.size == 2
+
+  # TODO: Use more reliable check from Upright Extruder for close to coplanar faces.
+  edge.faces[0].normal.parallel?(edge.faces[1].normal)
+end
+
+
+# TODO: Add menu entry. Now just calling the method directly.
+group_interior_edges
