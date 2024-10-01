@@ -9,3 +9,6 @@ actual cuts in a laser cutting workflow.
 Activated from **Extensions > Group Interior Edges**
 
 To reverse, simply explode the group.
+
+
+Tags: coplanar co-planar merge faces pattern extract
