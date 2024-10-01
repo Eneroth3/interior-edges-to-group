@@ -44,8 +44,19 @@ end
 def coplanar_edge?(edge)
   return false unless edge.faces.size == 2
 
-  # TODO: Use more reliable check from Upright Extruder for close to coplanar faces.
-  edge.faces[0].normal.parallel?(edge.faces[1].normal)
+  # This check fails on faces that are very close to being co-planar, but not
+  # within SketchUp's tolerance for when a face can be merged.
+  ### edge.faces[0].normal.parallel?(edge.faces[1].normal)
+
+  # SketchUp is itself inconsistent with these almost-coplanar faces between
+  # merging vs erasing faces when an edge is erased, and the Smooth Soften
+  # Edges function.
+
+  # I first devised this check for my original Upright Extruder and think I even
+  # managed to impress ThomThom.
+  (edge.faces[0].vertices - edge.faces[1].vertices).all? do |vertex|
+    vertex.position.on_plane?(edge.faces[1].plane)
+  end
 end
 
 
